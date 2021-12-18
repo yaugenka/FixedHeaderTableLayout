@@ -59,6 +59,7 @@ public class FixedHeaderTableLayout extends FrameLayout implements ScaleGestureD
     private final Matrix columnHeaderMatrix = new Matrix();
     private final Matrix rowHeaderMatrix = new Matrix();
     private final Matrix mainMatrix = new Matrix();
+    private Matrix eMatrix = null;
 
     private float panX = 0;
     private float panY = 0;
@@ -337,28 +338,33 @@ public class FixedHeaderTableLayout extends FrameLayout implements ScaleGestureD
     public boolean onInterceptTouchEvent(MotionEvent event) {
         //Log.d(LOG_TAG, "corner and table bounds: " + cornerRightBound + "/" + cornerBottomBound + " " + rightBound + "/" + bottomBound + " " + scaledRightBound + "/" + scaledBottomBound);
         //Log.d(LOG_TAG, "event coordinates: " + event.getX() + "/" + event.getY());
-        if(event.getX() <= scaledRightBound && event.getY() <= scaledBottomBound) {
+        eMatrix = null;
+        // scaleGestureDetector.onTouchEvent(event) is supposed to (according to the docs)
+        // return true only if the event was consumed, but it always returns true,
+        // so as a workaround we check isInProgress instead
+        gestureScale.onTouchEvent(event);
+        boolean intercepted = gestureScale.isInProgress() || detector.onTouchEvent(event);
+        if(!intercepted && event.getX() <= scaledRightBound && event.getY() <= scaledBottomBound) {
             // Select matrix for transformation based on the target SubTable
-            Matrix matrix;
             if (event.getX() <= cornerRightBound) {
                 if (event.getY() <= cornerBottomBound)
-                    matrix = cornerMatrix;
+                    eMatrix = cornerMatrix;
                 else
-                    matrix = rowHeaderMatrix;
+                    eMatrix = rowHeaderMatrix;
             } else {
                 if (event.getY() <= cornerBottomBound)
-                    matrix = columnHeaderMatrix;
+                    eMatrix = columnHeaderMatrix;
                 else
-                    matrix = mainMatrix;
+                    eMatrix = mainMatrix;
             }
             Matrix inverseMatrix = new Matrix();
-            if(matrix.invert(inverseMatrix)) {
+            if(eMatrix.invert(inverseMatrix)) {
                 event.transform(inverseMatrix);
                 //Log.d(LOG_TAG, "event transformed coordinates: " + event.getX() + "/" + event.getY());
             } else
                 Log.d(LOG_TAG, "Failed to invert matrix");
         }
-        return super.onInterceptTouchEvent(event);
+        return intercepted;
     }
 
     public void resetScale() {
@@ -413,14 +419,27 @@ public class FixedHeaderTableLayout extends FrameLayout implements ScaleGestureD
     public boolean onTouchEvent(MotionEvent event) {
         // Log.d(LOG_TAG, "onTouch");
         performClick();
-        gestureScale.onTouchEvent(event);
+        // When an event is NOT intercepted and NOT consumed by a child,
+        // it will be returned to here with transformed coordinates.
+        // Transform them back for scroll and scale to work
+        if(eMatrix != null) {
+            event.transform(eMatrix);
+            eMatrix = null;
+            //Log.d(LOG_TAG, "onTouchEvent reverse matrix")
+        }
+        // If child views have no click listeners, onScale may sometimes be triggered
+        // when user is moving just one finger.
+        // Prevent this from happening!
+        if(event.getPointerCount() > 1) {
+            gestureScale.onTouchEvent(event);
+        }
         detector.onTouchEvent(event);
         return true;
     }
 
     @Override
     public boolean onScale(ScaleGestureDetector detector) {
-        Log.d(LOG_TAG, "onScale");
+        //Log.d(LOG_TAG, "onScale");
         // Don't change the pan just scale
         calculatePanScale(0,0 ,detector.getScaleFactor());
         return true;

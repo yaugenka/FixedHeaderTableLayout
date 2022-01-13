@@ -33,8 +33,9 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="false"
         android:theme="@style/Theme.FixedHeaderTableLayout">
-        <activity android:name="com.github.zardozz.fixedheadertablelayoutsample.MainActivity"
-            >
+        <activity
+            android:name="com.github.zardozz.fixedheadertablelayoutsample.MainActivity"
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />

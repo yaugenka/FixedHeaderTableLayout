@@ -18,9 +18,9 @@ artifacts {
 group = PUBLISH_GROUP_ID
 version = PUBLISH_VERSION
 
-ext["signing.keyId"] = ''
-ext["signing.password"] = ''
-ext["signing.secretKeyRingFile"] = ''
+ext["signingKeyId"] = ''
+ext["signingPassword"] = ''
+ext["signingSecretKeyRingFile"] = ''
 ext["ossrhUsername"] = ''
 ext["ossrhPassword"] = ''
 ext["sonatypeStagingProfileId"] = ''
@@ -33,9 +33,9 @@ if (secretPropsFile.exists()) {
         ext[name] = value
     }
 } else {
-    ext["signing.keyId"] = System.getenv('SIGNING_KEY_ID')
-    ext["signing.password"] = System.getenv('SIGNING_PASSWORD')
-    ext["signing.secretKeyRingFile"] = System.getenv('SIGNING_SECRET_KEY_RING_FILE')
+    ext["signingKeyId"] = System.getenv('SIGNING_KEY_ID')
+    ext["signingPassword"] = System.getenv('SIGNING_PASSWORD')
+    ext["signingSecretKeyRingFile"] = System.getenv('SIGNING_SECRET_KEY_RING_FILE')
     ext["ossrhUsername"] = System.getenv('OSSRH_USERNAME')
     ext["ossrhPassword"] = System.getenv('OSSRH_PASSWORD')
     ext["sonatypeStagingProfileId"] = System.getenv('SONATYPE_STAGING_PROFILE_ID')
@@ -104,5 +104,6 @@ publishing {
 }
 
 signing {
+    required { hasProperty("signingKeyId") }
     sign publishing.publications
 }
